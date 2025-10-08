@@ -39,5 +39,38 @@ public class DocumentService {
     @Transactional
     public List<Document> getUserDocuments(Long userId) {
         return documentRepository.findByOwnerId(userId);
-    } 
+    }
+
+    public Document updateDocument(Long id, String title, Long ownerId, String description, DocumentVisibility visibility) {
+        Document document = getDocumentById(id);
+
+        if(title != null) {
+            document.setName(title);
+        }
+        if(description != null) {
+            document.setDescription(description);
+        }
+        if(visibility != null) {
+            document.setVisibility(visibility);
+        }
+
+        return documentRepository.save(document);
+    }
+
+    public void deleteDocument(Long id) {
+        if(!documentRepository.existsById(id)) {
+            throw new RuntimeException("Document not found");
+        } documentRepository.deleteById(id);
+    }
+
+    public Document updateDocumentVisibility(Long id, DocumentVisibility visibility) {
+        Document document = getDocumentById(id);
+        document.setVisibility(visibility);
+        return documentRepository.save(document);
+    }
+
+    @Transactional
+    public List<Document> getAllDocuments() {
+        return documentRepository.findAll();
+    }
 }
