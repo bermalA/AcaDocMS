@@ -1,56 +1,39 @@
 package com.acadoc.acadocms.controller;
 
 import com.acadoc.acadocms.model.User;
-import com.acadoc.acadocms.repository.UserRepository;
-import com.acadoc.acadocms.util.JWTUtil;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import com.acadoc.acadocms.service.UserService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
+@RequestMapping( "/api/users")
 public class UserController {
-    private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final JWTUtil jwtUtil;
+    private final UserService userService;
 
-    public UserController(UserRepository userRepository,
-                          PasswordEncoder passwordEncoder,
-                          JWTUtil jwtUtil) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtUtil = jwtUtil;
+    public UserController(UserService userService) {
+        this.userService = userService;
     }
 
-    @GetMapping("/users")
-    public Iterable<User> findAll() {
-        return userRepository.findAll();
+    @GetMapping
+    public ResponseEntity<List<User>> getAllUsers() {
+        return ResponseEntity.ok(userService.getAllUsers());
     }
 
-    @PostMapping("/register")
-    public String register(@RequestBody User user) {
-        user.setPasswordHash(passwordEncoder.encode(user.getPasswordHash()));
-        userRepository.save(user);
-        return "User saved successfully";
+    @GetMapping("/{id}")
+    public ResponseEntity<User> getUserById(@PathVariable Long id) {
+        return ResponseEntity.ok(userService.getUserById(id));
     }
 
-    @PostMapping("/login")
-    public String login(@RequestBody User user) {
-        var dbUser = userRepository.findByEmail(user.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        if (passwordEncoder.matches(user.getPasswordHash(), dbUser.getPasswordHash())) {
-            return jwtUtil.generateToken(dbUser.getEmail());
-        } else {
-            throw new RuntimeException("Invalid credentials");
-        }
+    @GetMapping("/email/{email}")
+    public ResponseEntity<User> getUserByEmail(@PathVariable String email) {
+        return ResponseEntity.ok(userService.getUserByEmail(email));
     }
 
-    @GetMapping("/secure")
-    public String secure() {
-        return "You are authenticated!";
-    }
-
-    @DeleteMapping("/deleteuser")
-    public void delete(@RequestBody User user) {
-        userRepository.delete(user);
+    @PostMapping("/{id}")
+    public ResponseEntity<Void> deleteUserById(@PathVariable Long id) {
+        userService.deleteUser(id);
+        return ResponseEntity.noContent().build();
     }
 }
