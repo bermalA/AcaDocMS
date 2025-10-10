@@ -1,6 +1,8 @@
 package com.acadoc.acadocms.service;
 
+import com.acadoc.acadocms.model.Role;
 import com.acadoc.acadocms.model.User;
+import com.acadoc.acadocms.model.UserRole;
 import com.acadoc.acadocms.repository.RoleRepository;
 import com.acadoc.acadocms.repository.UserRepository;
 import jakarta.transaction.Transactional;
@@ -15,30 +17,31 @@ import java.util.List;
 @RequiredArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
-    private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final RoleService roleService;
 
     @Transactional
     public List<User> getAllUsers() {
         return userRepository.findAll();
     }
 
-    public User registerUser(User user) {
-        if(userRepository.existsByEmail(user.getEmail())) {
+    public User registerUser(String fullName, String email, String password) {
+        if(userRepository.existsByEmail(email)) {
             throw new RuntimeException("Email already exists");
         }
-        user.setPasswordHash(passwordEncoder.encode(user.getPasswordHash()));
+        User user = new User();
+        user.setFullName(fullName);
+        user.setEmail(email);
+        user.setPasswordHash(passwordEncoder.encode(password));
         return userRepository.save(user);
     }
 
-    @Transactional
-    public User loginUser(String email, String password) {
-        User dbUser = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        if(!passwordEncoder.matches(password, dbUser.getPasswordHash())) {
-            throw new RuntimeException("Password does not match");
-        }
-        return dbUser;
+    public void assignRoleToUser(Long userId, UserRole roleType) {
+        User user = getUserById(userId);
+        Role role = roleService.getRoleByType(roleType);
+
+        user.getRoles().add(role);
+        userRepository.save(user);
     }
 
     public void deleteUser(Long id) {
@@ -59,4 +62,10 @@ public class UserService {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found "));
     }
+
+    @Transactional
+    public List<User> searchUsers(String keyword){
+        return userRepository.searchUsers(keyword);
+    }
+
 }
